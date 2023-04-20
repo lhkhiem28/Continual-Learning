@@ -47,3 +47,29 @@ class PretextsCA(nn.Module):
         )
 
         return pretext
+
+    def forward(self, 
+        input, 
+    ):
+        feature_resnet50_simclr = self.pretext_resnet50_simclr(input)
+        feature_resnet50_mocov2 = self.pretext_resnet50_mocov2(input)
+        attn_feature_resnet50_simclr = feature_resnet50_simclr + self.mha_resnet50_simclr(
+            feature_resnet50_simclr, 
+            feature_resnet50_mocov2, feature_resnet50_mocov2, 
+        )
+        attn_feature_resnet50_mocov2 = feature_resnet50_mocov2 + self.mha_resnet50_mocov2(
+            feature_resnet50_mocov2, 
+            feature_resnet50_simclr, feature_resnet50_simclr, 
+        )
+
+        attn_feature = torch.mean(torch.stack(
+            [
+                attn_feature_resnet50_simclr, 
+                attn_feature_resnet50_mocov2, 
+            ], 
+            dim = 1, 
+        ))
+
+        output = self.classifier(attn_feature)
+
+        return output
