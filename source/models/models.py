@@ -12,6 +12,8 @@ class PretextsCA(nn.Module):
             "facebookresearch/dino:main", "dino_vits16", 
             map_location = "cpu", 
         )
+        for parameter in self.vits16_dino.parameters():
+            parameter.requires_grad = False
 
     def load_pretext(self, 
         state_dict_path, 
@@ -31,6 +33,12 @@ class PretextsCA(nn.Module):
         pretext.load_state_dict(
             state_dict = state_dict, 
             strict = True, 
+        )
+        for parameter in pretext.parameters():
+            parameter.requires_grad = False
+
+        pretext.fc = nn.Linear(
+            2048, 384, 
         )
 
         return pretext
