@@ -6,14 +6,20 @@ class PretextsCA(nn.Module):
         num_classes = 0, 
     ):
         super(PretextsCA, self).__init__()
-        self.resnet50_simclr = self.load_pretext("/home/ubuntu/khiem.lh/Free/Continual-Learning/pretexts/resnet50_simclr")
-        self.resnet50_mocov2 = self.load_pretext("/home/ubuntu/khiem.lh/Free/Continual-Learning/pretexts/resnet50_mocov2")
-        self.vits16_dino = torch.hub.load(
-            "facebookresearch/dino:main", "dino_vits16", 
-            map_location = "cpu", 
+        self.pretext_resnet50_simclr = self.load_pretext("/home/ubuntu/khiem.lh/Free/Continual-Learning/pretexts/resnet50_simclr")
+        self.pretext_resnet50_mocov2 = self.load_pretext("/home/ubuntu/khiem.lh/Free/Continual-Learning/pretexts/resnet50_mocov2")
+        self.mha_resnet50_simclr = nn.MultiheadAttention(
+            embed_dim = 384, num_heads = 2, 
+            batch_first = True, 
         )
-        for parameter in self.vits16_dino.parameters():
-            parameter.requires_grad = False
+        self.mha_resnet50_mocov2 = nn.MultiheadAttention(
+            embed_dim = 384, num_heads = 2, 
+            batch_first = True, 
+        )
+
+        self.classifier = nn.Linear(
+            384, num_classes, 
+        )
 
     def load_pretext(self, 
         state_dict_path, 
@@ -27,7 +33,6 @@ class PretextsCA(nn.Module):
             (key.replace("_feature_blocks.", ""), value) if "_feature_blocks." in key else (key, value) 
             for key, value in state_dict.items()
         ])
-
         pretext = torchvision.models.__dict__["resnet50"]()
         pretext.fc = nn.Identity()
         pretext.load_state_dict(
