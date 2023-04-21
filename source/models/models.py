@@ -39,8 +39,8 @@ class PretextsCA(nn.Module):
             state_dict = state_dict, 
             strict = True, 
         )
-        for parameter in pretext.parameters():
-            parameter.requires_grad = False
+        # for parameter in pretext.parameters():
+            # parameter.requires_grad = False
 
         pretext.fc = nn.Linear(
             2048, 384, 
