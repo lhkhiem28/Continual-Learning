@@ -6,8 +6,8 @@ class PretextsCA(nn.Module):
         num_classes = 0, 
     ):
         super(PretextsCA, self).__init__()
-        self.pretext_resnet50_simclr = self.load_pretext("/home/ubuntu/khiem.lh/Free/Continual-Learning/pretexts/resnet50_simclr")
-        self.pretext_resnet50_mocov2 = self.load_pretext("/home/ubuntu/khiem.lh/Free/Continual-Learning/pretexts/resnet50_mocov2")
+        self.pretext_resnet50_simclr = self.load_pretext_vissl("/home/ubuntu/khiem.lh/Free/Continual-Learning/pretexts/resnet50_simclr")
+        self.pretext_resnet50_mocov2 = self.load_pretext_vissl("/home/ubuntu/khiem.lh/Free/Continual-Learning/pretexts/resnet50_mocov2")
         self.mha_resnet50_simclr = nn.MultiheadAttention(
             embed_dim = 384, num_heads = 2, 
             batch_first = True, 
@@ -21,7 +21,7 @@ class PretextsCA(nn.Module):
             384, num_classes, 
         )
 
-    def load_pretext(self, 
+    def load_pretext_vissl(self, 
         state_dict_path, 
     ):
         state_dict = torch.load(
@@ -53,23 +53,36 @@ class PretextsCA(nn.Module):
     ):
         feature_resnet50_simclr = self.pretext_resnet50_simclr(input)
         feature_resnet50_mocov2 = self.pretext_resnet50_mocov2(input)
+        feature = torch.mean(
+            torch.stack(
+                [
+                    feature_resnet50_simclr, 
+                    feature_resnet50_mocov2, 
+                ]
+            ), 
+            dim = 0, 
+        )
         attn_feature_resnet50_simclr = feature_resnet50_simclr + self.mha_resnet50_simclr(
             feature_resnet50_simclr, 
             feature_resnet50_mocov2, feature_resnet50_mocov2, 
-        )
+        )[0]
         attn_feature_resnet50_mocov2 = feature_resnet50_mocov2 + self.mha_resnet50_mocov2(
             feature_resnet50_mocov2, 
             feature_resnet50_simclr, feature_resnet50_simclr, 
+        )[0]
+        attn_feature = torch.mean(
+            torch.stack(
+                [
+                    attn_feature_resnet50_simclr, 
+                    attn_feature_resnet50_mocov2, 
+                ]
+            ), 
+            dim = 0, 
         )
-
-        attn_feature = torch.mean(torch.stack(
-            [
-                attn_feature_resnet50_simclr, 
-                attn_feature_resnet50_mocov2, 
-            ], 
-            dim = 1, 
-        ))
 
         output = self.classifier(attn_feature)
 
-        return output
+        return (
+            feature, 
+            attn_feature, 
+        ), output
