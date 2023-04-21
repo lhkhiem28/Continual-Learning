@@ -36,7 +36,7 @@ save_ckp_dir = "../../ckps/HAM/PretextsCA"
 if not os.path.exists(save_ckp_dir):
     os.makedirs(save_ckp_dir)
 train_fn(
-    train_loaders, num_epochs = 30, 
+    train_loaders, num_epochs = 50, 
     model = model, 
     optimizer = optimizer, 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu"), 
