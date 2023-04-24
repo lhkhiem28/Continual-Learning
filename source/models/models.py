@@ -9,16 +9,16 @@ class PretextsCA(nn.Module):
         self.pretext_resnet50_simclr = self.load_pretext_vissl("/home/ubuntu/khiem.lh/Free/Continual-Learning/pretexts/resnet50_simclr")
         self.pretext_resnet50_mocov2 = self.load_pretext_vissl("/home/ubuntu/khiem.lh/Free/Continual-Learning/pretexts/resnet50_mocov2")
         self.mha_resnet50_simclr = nn.MultiheadAttention(
-            embed_dim = 384, num_heads = 2, 
+            embed_dim = 300, num_heads = 2, 
             batch_first = True, 
         )
         self.mha_resnet50_mocov2 = nn.MultiheadAttention(
-            embed_dim = 384, num_heads = 2, 
+            embed_dim = 300, num_heads = 2, 
             batch_first = True, 
         )
 
         self.classifier = nn.Linear(
-            384, num_classes, 
+            300, num_classes, 
         )
 
     def load_pretext_vissl(self, 
@@ -43,7 +43,7 @@ class PretextsCA(nn.Module):
             # parameter.requires_grad = False
 
         pretext.fc = nn.Linear(
-            2048, 384, 
+            2048, 300, 
         )
 
         return pretext
