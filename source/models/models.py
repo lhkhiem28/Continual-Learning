@@ -6,14 +6,14 @@ class PretextsCA(nn.Module):
         num_classes = 0, 
     ):
         super(PretextsCA, self).__init__()
-        self.pretext_resnet50_simclr = self.load_pretext("resnet50_simclr")
-        self.pretext_resnet50_mocov2 = self.load_pretext("resnet50_mocov2")
-        self.mha_resnet50_simclr = nn.MultiheadAttention(
+        self.pretext_simclr_resnet50 = self.load_pretext("simclr_resnet50")
+        self.pretext_dinov2_vitb14 = self.load_pretext("dinov2_vitb14")
+        self.mha_simclr_resnet50 = nn.MultiheadAttention(
             embed_dim = 300, 
             num_heads = 2, dropout = 0.2, 
             batch_first = True, 
         )
-        self.mha_resnet50_mocov2 = nn.MultiheadAttention(
+        self.mha_dinov2_vitb14 = nn.MultiheadAttention(
             embed_dim = 300, 
             num_heads = 2, dropout = 0.2, 
             batch_first = True, 
@@ -51,7 +51,7 @@ class PretextsCA(nn.Module):
                     "facebookresearch/dino:main", state_dict_path, 
                 )
             pretext.head = nn.Linear(
-                384, 300, 
+                768, 300, 
             )
 
         return pretext
@@ -59,30 +59,30 @@ class PretextsCA(nn.Module):
     def forward(self, 
         input, 
     ):
-        feature_resnet50_simclr = self.pretext_resnet50_simclr(input)
-        feature_resnet50_mocov2 = self.pretext_resnet50_mocov2(input)
+        feature_simclr_resnet50 = self.pretext_simclr_resnet50(input)
+        feature_dinov2_vitb14 = self.pretext_dinov2_vitb14(input)
         feature = torch.mean(
             torch.stack(
                 [
-                    feature_resnet50_simclr, 
-                    feature_resnet50_mocov2, 
+                    feature_simclr_resnet50, 
+                    feature_dinov2_vitb14, 
                 ]
             ), 
             dim = 0, 
         )
-        attn_feature_resnet50_simclr = feature_resnet50_simclr + self.mha_resnet50_simclr(
-            feature_resnet50_simclr, 
-            feature_resnet50_mocov2, feature_resnet50_mocov2, 
+        attn_feature_simclr_resnet50 = feature_simclr_resnet50 + self.mha_simclr_resnet50(
+            feature_simclr_resnet50, 
+            feature_dinov2_vitb14, feature_dinov2_vitb14, 
         )[0]
-        attn_feature_resnet50_mocov2 = feature_resnet50_mocov2 + self.mha_resnet50_mocov2(
-            feature_resnet50_mocov2, 
-            feature_resnet50_simclr, feature_resnet50_simclr, 
+        attn_feature_dinov2_vitb14 = feature_dinov2_vitb14 + self.mha_dinov2_vitb14(
+            feature_dinov2_vitb14, 
+            feature_simclr_resnet50, feature_simclr_resnet50, 
         )[0]
         attn_feature = torch.mean(
             torch.stack(
                 [
-                    attn_feature_resnet50_simclr, 
-                    attn_feature_resnet50_mocov2, 
+                    attn_feature_simclr_resnet50, 
+                    attn_feature_dinov2_vitb14, 
                 ]
             ), 
             dim = 0, 
